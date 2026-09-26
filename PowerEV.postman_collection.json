@@ -1,0 +1,1658 @@
+{
+  "info": {
+    "_postman_id": "72efcbeb-9c82-4704-b2cf-b1b365171d47",
+    "name": "PowerEV API",
+    "description": "PowerEV \u2014 EV Charging Finder & Slot Booking. Generated directly from the app's Supabase client calls (src/lib/api/*.ts), the SQL migrations (supabase/migrations/*.sql), and its RLS policies. Every request here is a real Supabase Auth / PostgREST / RPC call this app actually makes \u2014 nothing invented.\n\nRun order for a fresh environment: Authentication -> Stations -> Chargers -> Availability -> Bookings. The 'Double-Booking Protection' folder is a standalone demo sequence (run its 4 requests in order).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "supabase_url",
+      "value": "https://YOUR-PROJECT.supabase.co",
+      "type": "string"
+    },
+    {
+      "key": "anon_key",
+      "value": "YOUR_SUPABASE_ANON_KEY",
+      "type": "string"
+    },
+    {
+      "key": "driver_email",
+      "value": "driver@demo.powerev.ng",
+      "type": "string"
+    },
+    {
+      "key": "driver_password",
+      "value": "demo1234",
+      "type": "string"
+    },
+    {
+      "key": "operator_email",
+      "value": "operator@demo.powerev.ng",
+      "type": "string"
+    },
+    {
+      "key": "operator_password",
+      "value": "demo1234",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "driver_access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "operator_access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "driver_user_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "operator_user_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "station_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "created_station_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "charger_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "slot_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "slot_date",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "booking_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "booking_reference",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Driver Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{supabase_url}}/auth/v1/token?grant_type=password",
+              "protocol": null,
+              "host": [
+                "{{supabase_url}}"
+              ],
+              "path": [
+                "auth",
+                "v1",
+                "token"
+              ],
+              "query": [
+                {
+                  "key": "grant_type",
+                  "value": "password"
+                }
+              ]
+            },
+            "description": "Supabase GoTrue password grant. Mirrors supabase.auth.signInWithPassword() used in src/lib/auth.tsx.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{driver_email}}\",\n  \"password\": \"{{driver_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login succeeded', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test('Access token exists', function () {",
+                  "    pm.expect(jsonData.access_token).to.be.a('string').and.not.empty;",
+                  "});",
+                  "if (jsonData.access_token) {",
+                  "    pm.collectionVariables.set('driver_access_token', jsonData.access_token);",
+                  "    pm.collectionVariables.set('access_token', jsonData.access_token);",
+                  "}",
+                  "if (jsonData.user && jsonData.user.id) {",
+                  "    pm.collectionVariables.set('driver_user_id', jsonData.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Operator Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{supabase_url}}/auth/v1/token?grant_type=password",
+              "protocol": null,
+              "host": [
+                "{{supabase_url}}"
+              ],
+              "path": [
+                "auth",
+                "v1",
+                "token"
+              ],
+              "query": [
+                {
+                  "key": "grant_type",
+                  "value": "password"
+                }
+              ]
+            },
+            "description": "Supabase GoTrue password grant for the operator demo account.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{operator_email}}\",\n  \"password\": \"{{operator_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login succeeded', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test('Access token exists', function () {",
+                  "    pm.expect(jsonData.access_token).to.be.a('string').and.not.empty;",
+                  "});",
+                  "if (jsonData.access_token) {",
+                  "    pm.collectionVariables.set('operator_access_token', jsonData.access_token);",
+                  "}",
+                  "if (jsonData.user && jsonData.user.id) {",
+                  "    pm.collectionVariables.set('operator_user_id', jsonData.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Stations",
+      "item": [
+        {
+          "name": "List Stations (with chargers)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driver_access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{supabase_url}}/rest/v1/stations?select=*,chargers(*)&order=name.asc",
+              "protocol": null,
+              "host": [
+                "{{supabase_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "stations"
+              ],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "*,chargers(*)"
+                },
+                {
+                  "key": "order",
+                  "value": "name.asc"
+                }
+              ]
+            },
+            "description": "Mirrors fetchStationsWithChargers() in src/lib/api/stations.ts. Any authenticated user can read (RLS: stations_select_all_authenticated)."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Stations request returns successful response', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test('Returns an array of stations', function () {",
+                  "    pm.expect(jsonData).to.be.an('array');",
+                  "});",
+                  "if (jsonData.length > 0) {",
+                  "    pm.collectionVariables.set('station_id', jsonData[0].id);",
+                  "    var onlineCharger = (jsonData[0].chargers || []).find(function (c) { return c.status === 'ONLINE'; });",
+                  "    if (onlineCharger) {",
+                  "        pm.collectionVariables.set('charger_id', onlineCharger.id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Station Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driver_access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{supabase_url}}/rest/v1/stations?id=eq.{{station_id}}&select=*,chargers(*)",
+              "protocol": null,
+              "host": [
+                "{{supabase_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "stations"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "eq.{{station_id}}"
+                },
+                {
+                  "key": "select",
+                  "value": "*,chargers(*)"
+                }
+              ]
+            },
+            "description": "Mirrors fetchStationById() in src/lib/api/stations.ts."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Station details request returns successful response', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test('Returned station matches station_id', function () {",
+                  "    pm.expect(jsonData[0].id).to.eql(pm.collectionVariables.get('station_id'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Station (operator)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{operator_access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{supabase_url}}/rest/v1/stations",
+              "protocol": null,
+              "host": [
+                "{{supabase_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "stations"
+              ]
+            },
+            "description": "Mirrors createStation() in src/lib/api/stations.ts. RLS (stations_insert_own) requires owner_id = auth.uid(), i.e. operator_user_id.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"owner_id\": \"{{operator_user_id}}\",\n  \"name\": \"Postman Test Station\",\n  \"address\": \"1 Test Close\",\n  \"city\": \"Lagos\",\n  \"latitude\": 6.5,\n  \"longitude\": 3.4,\n  \"operating_hours\": \"06:00 - 22:00\",\n  \"status\": \"ONLINE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Station created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData[0] && jsonData[0].id) {",
+                  "    pm.collectionVariables.set('created_station_id', jsonData[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Station (operator)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{operator_access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{supabase_url}}/rest/v1/stations?id=eq.{{station_id}}",
+              "protocol": null,
+              "host": [
+                "{{supabase_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "stations"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "eq.{{station_id}}"
+                }
+              ]
+            },
+            "description": "Mirrors updateStation() in src/lib/api/stations.ts. Only succeeds if operator_access_token belongs to this station's owner (RLS: stations_update_own).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ONLINE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Station update returns successful response', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Chargers",
+      "item": [
+        {
+          "name": "List Chargers for Station",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driver_access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{supabase_url}}/rest/v1/chargers?station_id=eq.{{station_id}}",
+              "protocol": null,
+              "host": [
+                "{{supabase_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "chargers"
+              ],
+              "query": [
+                {
+                  "key": "station_id",
+                  "value": "eq.{{station_id}}"
+                }
+              ]
+            },
+            "description": "Chargers scoped to one station, as used on the Station Detail page."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Chargers request returns successful response', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response is an array', function () {",
+                  "    pm.expect(pm.response.json()).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Filter ONLINE Chargers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driver_access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{supabase_url}}/rest/v1/chargers?status=eq.ONLINE",
+              "protocol": null,
+              "host": [
+                "{{supabase_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "chargers"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "eq.ONLINE"
+                }
+              ]
+            },
+            "description": "Used by the driver dashboard's 'only show available chargers' filter (see StationFilters.tsx)."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Online chargers request returns successful response', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test('Online charger filtering returns only ONLINE chargers', function () {",
+                  "    jsonData.forEach(function (c) {",
+                  "        pm.expect(c.status).to.eql('ONLINE');",
+                  "    });",
+                  "});",
+                  "if (jsonData.length > 0) {",
+                  "    pm.collectionVariables.set('charger_id', jsonData[0].id);",
+                  "    pm.collectionVariables.set('station_id', jsonData[0].station_id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Charger (operator)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{operator_access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{supabase_url}}/rest/v1/chargers",
+              "protocol": null,
+              "host": [
+                "{{supabase_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "chargers"
+              ]
+            },
+            "description": "Mirrors createCharger() in src/lib/api/stations.ts. RLS (chargers_insert_own_station) requires the operator to own the parent station.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"station_id\": \"{{station_id}}\",\n  \"name\": \"Postman Test Charger\",\n  \"charger_type\": \"AC Type 2\",\n  \"charging_speed\": \"7 kW\",\n  \"price_per_kwh\": 150,\n  \"status\": \"ONLINE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Charger created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Charger Status/Price (operator)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{operator_access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{supabase_url}}/rest/v1/chargers?id=eq.{{charger_id}}",
+              "protocol": null,
+              "host": [
+                "{{supabase_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "chargers"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "eq.{{charger_id}}"
+                }
+              ]
+            },
+            "description": "Mirrors updateCharger() in src/lib/api/stations.ts, used by the operator Chargers page's status/price controls.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price_per_kwh\": 160,\n  \"status\": \"ONLINE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Charger update returns successful response', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Availability",
+      "item": [
+        {
+          "name": "Get Slots for Charger",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driver_access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{supabase_url}}/rest/v1/availability_slots?charger_id=eq.{{charger_id}}&order=slot_date.asc,start_time.asc",
+              "protocol": null,
+              "host": [
+                "{{supabase_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "availability_slots"
+              ],
+              "query": [
+                {
+                  "key": "charger_id",
+                  "value": "eq.{{charger_id}}"
+                },
+                {
+                  "key": "order",
+                  "value": "slot_date.asc,start_time.asc"
+                }
+              ]
+            },
+            "description": "Mirrors fetchSlotsForCharger() in src/lib/api/availability.ts."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Availability request returns successful response', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "var available = jsonData.find(function (s) { return s.status === 'AVAILABLE'; });",
+                  "pm.test('Availability request returns available slots', function () {",
+                  "    pm.expect(available, 'expected at least one AVAILABLE slot in the seeded data').to.not.be.undefined;",
+                  "});",
+                  "if (available) {",
+                  "    pm.collectionVariables.set('slot_id', available.id);",
+                  "    pm.collectionVariables.set('slot_date', available.slot_date);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Slots for a Date",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driver_access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{supabase_url}}/rest/v1/availability_slots?charger_id=eq.{{charger_id}}&slot_date=eq.{{slot_date}}",
+              "protocol": null,
+              "host": [
+                "{{supabase_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "availability_slots"
+              ],
+              "query": [
+                {
+                  "key": "charger_id",
+                  "value": "eq.{{charger_id}}"
+                },
+                {
+                  "key": "slot_date",
+                  "value": "eq.{{slot_date}}"
+                }
+              ]
+            },
+            "description": "Same table, filtered to one date \u2014 mirrors the per-day tab behaviour of SlotPicker.tsx (filterSlotsForDate()). Run 'Get Slots for Charger' first to populate {{slot_date}}."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Slots-for-date request returns successful response', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get AVAILABLE Slots Only",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driver_access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{supabase_url}}/rest/v1/availability_slots?charger_id=eq.{{charger_id}}&status=eq.AVAILABLE",
+              "protocol": null,
+              "host": [
+                "{{supabase_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "availability_slots"
+              ],
+              "query": [
+                {
+                  "key": "charger_id",
+                  "value": "eq.{{charger_id}}"
+                },
+                {
+                  "key": "status",
+                  "value": "eq.AVAILABLE"
+                }
+              ]
+            },
+            "description": "Equivalent to isSlotSelectable() filtering in src/lib/availability.ts, done server-side."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Available-only request returns successful response', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test('All returned slots are AVAILABLE', function () {",
+                  "    jsonData.forEach(function (s) { pm.expect(s.status).to.eql('AVAILABLE'); });",
+                  "});",
+                  "if (jsonData.length > 0) {",
+                  "    pm.collectionVariables.set('slot_id', jsonData[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add Availability Slot (operator)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{operator_access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{supabase_url}}/rest/v1/availability_slots",
+              "protocol": null,
+              "host": [
+                "{{supabase_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "availability_slots"
+              ]
+            },
+            "description": "Mirrors addSlot() in src/lib/api/availability.ts, used by the operator Availability page.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"charger_id\": \"{{charger_id}}\",\n  \"slot_date\": \"{{slot_date}}\",\n  \"start_time\": \"18:00:00\",\n  \"end_time\": \"19:00:00\",\n  \"status\": \"AVAILABLE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Slot created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Bookings",
+      "item": [
+        {
+          "name": "Create Booking (RPC create_booking)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driver_access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{supabase_url}}/rest/v1/rpc/create_booking",
+              "protocol": null,
+              "host": [
+                "{{supabase_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "rpc",
+                "create_booking"
+              ]
+            },
+            "description": "Calls the create_booking() Postgres function directly (supabase/migrations/0003_booking_function.sql) \u2014 the SAME function the app's createBooking() calls via supabase.rpc(). This function takes a row lock (SELECT ... FOR UPDATE) on the slot before inserting, so it is transaction-safe against concurrent requests.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_user_id\": \"{{driver_user_id}}\",\n  \"p_station_id\": \"{{station_id}}\",\n  \"p_charger_id\": \"{{charger_id}}\",\n  \"p_availability_slot_id\": \"{{slot_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Booking creation returns a successful response', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test('Booking has a booking reference', function () {",
+                  "    pm.expect(jsonData.booking_reference).to.match(/^EV-\\d{8}-[A-Z0-9]{5}$/);",
+                  "});",
+                  "pm.test('Booking status is CONFIRMED', function () {",
+                  "    pm.expect(jsonData.status).to.eql('CONFIRMED');",
+                  "});",
+                  "if (jsonData.id) pm.collectionVariables.set('booking_id', jsonData.id);",
+                  "if (jsonData.booking_reference) pm.collectionVariables.set('booking_reference', jsonData.booking_reference);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Driver's Bookings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driver_access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{supabase_url}}/rest/v1/bookings?user_id=eq.{{driver_user_id}}&order=created_at.desc",
+              "protocol": null,
+              "host": [
+                "{{supabase_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "bookings"
+              ],
+              "query": [
+                {
+                  "key": "user_id",
+                  "value": "eq.{{driver_user_id}}"
+                },
+                {
+                  "key": "order",
+                  "value": "created_at.desc"
+                }
+              ]
+            },
+            "description": "Mirrors fetchMyBookings() in src/lib/api/bookings.ts."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Driver bookings request returns successful response', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test('Includes the booking just created', function () {",
+                  "    var ref = pm.collectionVariables.get('booking_reference');",
+                  "    var found = jsonData.some(function (b) { return b.booking_reference === ref; });",
+                  "    pm.expect(found).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Booking Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driver_access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{supabase_url}}/rest/v1/bookings?id=eq.{{booking_id}}",
+              "protocol": null,
+              "host": [
+                "{{supabase_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "bookings"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "eq.{{booking_id}}"
+                }
+              ]
+            },
+            "description": "Mirrors fetchBookingById() in src/lib/api/bookings.ts, used on the confirmation screen."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Booking details request returns successful response', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test('Booking details match the created booking', function () {",
+                  "    pm.expect(jsonData[0].booking_reference).to.eql(pm.collectionVariables.get('booking_reference'));",
+                  "    pm.expect(jsonData[0].status).to.eql('CONFIRMED');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Operator Bookings (own stations)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{operator_access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{supabase_url}}/rest/v1/bookings?select=*,stations!inner(owner_id,name),chargers(name,charger_type),profiles(full_name,email)&stations.owner_id=eq.{{operator_user_id}}&order=booking_date.asc",
+              "protocol": null,
+              "host": [
+                "{{supabase_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "bookings"
+              ],
+              "query": [
+                {
+                  "key": "select",
+                  "value": "*,stations!inner(owner_id,name),chargers(name,charger_type),profiles(full_name,email)"
+                },
+                {
+                  "key": "stations.owner_id",
+                  "value": "eq.{{operator_user_id}}"
+                },
+                {
+                  "key": "order",
+                  "value": "booking_date.asc"
+                }
+              ]
+            },
+            "description": "Mirrors fetchBookingsForOperator() in src/lib/api/bookings.ts, used on the operator Bookings page. The `profiles(full_name,email)` embed only returns data once migration 0004_operator_booking_visibility.sql is applied, which scopes an operator's profile visibility to drivers who booked their stations."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Operator bookings request returns successful response', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test('Includes the booking just created, attributed to the driver', function () {",
+                  "    var ref = pm.collectionVariables.get('booking_reference');",
+                  "    var match = jsonData.find(function (b) { return b.booking_reference === ref; });",
+                  "    pm.expect(match, 'booking not visible to operator').to.not.be.undefined;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancel Booking",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driver_access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{supabase_url}}/rest/v1/bookings?id=eq.{{booking_id}}",
+              "protocol": null,
+              "host": [
+                "{{supabase_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "bookings"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "eq.{{booking_id}}"
+                }
+              ]
+            },
+            "description": "Allowed by RLS policy bookings_update_own_or_operator (0002_rls_policies.sql). NOTE: the app's frontend does not currently expose a cancel button \u2014 this endpoint exists at the database/API level via RLS but is not wired into the UI yet.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CANCELLED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Cancel request returns successful response', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Double-Booking Protection (Task 3 demo)",
+      "item": [
+        {
+          "name": "1. Get a Fresh AVAILABLE Slot",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driver_access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{supabase_url}}/rest/v1/availability_slots?charger_id=eq.{{charger_id}}&status=eq.AVAILABLE&limit=1",
+              "protocol": null,
+              "host": [
+                "{{supabase_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "availability_slots"
+              ],
+              "query": [
+                {
+                  "key": "charger_id",
+                  "value": "eq.{{charger_id}}"
+                },
+                {
+                  "key": "status",
+                  "value": "eq.AVAILABLE"
+                },
+                {
+                  "key": "limit",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Grabs one AVAILABLE slot to demonstrate the double-booking guard against. Run after 'Filter ONLINE Chargers' has set {{charger_id}}."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Found an available slot to test with', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.length).to.be.greaterThan(0);",
+                  "    pm.collectionVariables.set('slot_id', jsonData[0].id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2. Book The Slot (first attempt \u2014 should succeed)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driver_access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{supabase_url}}/rest/v1/rpc/create_booking",
+              "protocol": null,
+              "host": [
+                "{{supabase_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "rpc",
+                "create_booking"
+              ]
+            },
+            "description": "First booking of this slot in the demo sequence. Expected to succeed.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_user_id\": \"{{driver_user_id}}\",\n  \"p_station_id\": \"{{station_id}}\",\n  \"p_charger_id\": \"{{charger_id}}\",\n  \"p_availability_slot_id\": \"{{slot_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('First booking succeeds', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.id) pm.collectionVariables.set('booking_id', jsonData.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3. Attempt Duplicate Booking of the SAME Slot (should fail)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driver_access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{supabase_url}}/rest/v1/rpc/create_booking",
+              "protocol": null,
+              "host": [
+                "{{supabase_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "rpc",
+                "create_booking"
+              ]
+            },
+            "description": "Same slot_id as request 2, sent again. create_booking() re-checks the slot's status under a row lock and raises SLOT_ALREADY_BOOKED, which PostgREST surfaces as an HTTP error response (commonly 400) rather than a 2xx. If your PostgREST version surfaces this differently, check the actual status code returned here and adjust the assertion below.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"p_user_id\": \"{{driver_user_id}}\",\n  \"p_station_id\": \"{{station_id}}\",\n  \"p_charger_id\": \"{{charger_id}}\",\n  \"p_availability_slot_id\": \"{{slot_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Duplicate booking is rejected (not a 2xx success)', function () {",
+                  "    pm.expect(pm.response.code).to.not.be.oneOf([200, 201]);",
+                  "});",
+                  "pm.test('Rejection message references the double-booking guard', function () {",
+                  "    var text = pm.response.text();",
+                  "    pm.expect(text).to.match(/SLOT_ALREADY_BOOKED|just booked by another user/i);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4. Verify Only One CONFIRMED Booking Exists for the Slot",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "apikey",
+                "value": "{{anon_key}}",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{driver_access_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{supabase_url}}/rest/v1/bookings?availability_slot_id=eq.{{slot_id}}&status=eq.CONFIRMED",
+              "protocol": null,
+              "host": [
+                "{{supabase_url}}"
+              ],
+              "path": [
+                "rest",
+                "v1",
+                "bookings"
+              ],
+              "query": [
+                {
+                  "key": "availability_slot_id",
+                  "value": "eq.{{slot_id}}"
+                },
+                {
+                  "key": "status",
+                  "value": "eq.CONFIRMED"
+                }
+              ]
+            },
+            "description": "Directly queries the bookings table to prove the database itself holds exactly one CONFIRMED row for the contested slot, regardless of how many booking attempts were made."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Verification query returns successful response', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test('Exactly one CONFIRMED booking exists for the slot', function () {",
+                  "    pm.expect(jsonData.length).to.eql(1);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
